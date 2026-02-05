@@ -1,0 +1,54 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Jan 28 13:44:21 2026
+
+@author: holly
+"""
+
+from flask import Flask, render_template, request, jsonify
+
+app = Flask(__name__)
+
+INBOXES = {}
+
+@app.route("/join", methods=["GET", "POST"])
+def join():
+    if request.method == "POST":
+        pass
+    return render_template("join.html")
+
+@app.route("/send", methods=["POST"])
+def send():
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify(ok=False, error="Expected JSON"), 400
+
+    for k in ("from_id", "to_id", "message"):
+        if k not in data:
+            return jsonify(ok=False, error=f"Missing {k}"), 400
+
+    msg = {
+        "from_id": data["from_id"],
+        "message": data["message"],
+    }
+    print("SEND", data["from_id"], "->", data["to_id"], ":", data["message"])
+    print("INBOX COUNTS:", {k: len(v) for k, v in INBOXES.items()})
+
+    INBOXES.setdefault(data["to_id"], []).append(msg)
+    return jsonify(ok=True), 200
+
+@app.route("/inbox", methods=["GET"])
+def inbox():
+    device_id = request.args.get("device_id")
+    if not device_id:
+        return jsonify(ok=False, error="Missing device_id"), 400
+
+    msgs = INBOXES.get(device_id, [])
+    INBOXES[device_id] = []
+    return jsonify(ok=True, messages=msgs), 200
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+
+
+#for testing: 127.0.0.1:5000/join
