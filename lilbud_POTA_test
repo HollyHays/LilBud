@@ -1,0 +1,59 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+const char* ssid = "iPhone (3)";
+const char* password = "Albus1010$";
+const char* SERVER = "http://172.20.10.9:5000";
+
+const char* ME = "lilbud_01";
+const char* THEM = "lilbud_02";
+
+int n = 0;
+
+void sendMsg(const String& to, const String& msg) {
+  HTTPClient http;
+  http.begin(String(SERVER) + "/send");
+  http.addHeader("Content-Type", "application/json");
+
+  String body = "{\"from_id\":\"" + String(ME) + "\",\"to_id\":\"" + to + "\",\"message\":\"" + msg + "\"}";
+  int code = http.POST(body);
+
+  Serial.print("sent ");
+  Serial.print(msg);
+  Serial.print(" code=");
+  Serial.println(code);
+
+  http.end();
+}
+
+void checkInbox() {
+  HTTPClient http;
+  http.begin(String(SERVER) + "/inbox?device_id=" + String(ME));
+  int code = http.GET();
+  String resp = http.getString();
+  http.end();
+
+  // Only print when we actually received a message
+  if (code == 200 && resp.indexOf("\"from_id\"") >= 0) {
+    Serial.print("RECEIVED: ");
+    Serial.println(resp);
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) delay(200);
+  Serial.println("WiFi ok");
+}
+
+void loop() {
+  sendMsg(THEM, "PING " + String(++n));
+  unsigned long start = millis();
+
+  // for the next 30s, poll inbox every 2s
+  while (millis() - start < 30000) {
+    checkInbox();
+    delay(2000);
+  }
+}
