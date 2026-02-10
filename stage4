@@ -283,8 +283,7 @@ int alphafilter(float nMoisture, float potMoisture = 0){
 }
 
 int readSensor(){
-  int pin = 1;
-  int cMoisture = analogRead(pin);
+  int cMoisture = analogRead(MOIST_PIN);
   potMoisture = alphafilter(cMoisture);
   return cMoisture;
 }
